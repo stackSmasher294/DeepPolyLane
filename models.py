@@ -18,7 +18,7 @@ class PolyNet(nn.Module):
             
         self.feature_extractor = mobilenetv2.features
         
-        self.linear1 = nn.Linear(mobilenetv2.last_channel, 512)
+        self.linear1 = nn.Linear(mobilenetv2.last_channel * 7 * 7, 512)
         self.linear2 = nn.Linear(512, 128)
         
         self.existence = nn.Linear(128, num_lanes)
@@ -33,7 +33,7 @@ class PolyNet(nn.Module):
         x = F.relu(self.linear1(x))
         x = F.relu(self.linear2(x))
         
-        objectness = F.sigmoid(x)
+        objectness = F.sigmoid(self.existence(x))
         polylines = self.lanelines(x)
         
         return (objectness, polylines)

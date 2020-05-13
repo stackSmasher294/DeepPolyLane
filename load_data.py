@@ -160,10 +160,10 @@ class ToTensor(object):
         # numpy image: H x W x C
         # torch image: C X H X W
         image = image.transpose((2, 0, 1))
-        detections_flattened = detections.reshape((1, -1))
+        #detections_flattened = detections.reshape((1, -1))
         
         return {'image': torch.from_numpy(image),
-                'detections': torch.from_numpy(detections_flattened)}
+                'detections': torch.from_numpy(detections)}
     
 class ReorderLanes(object):
     """
