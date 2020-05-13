@@ -18,11 +18,13 @@ class PolyNet(nn.Module):
             
         self.feature_extractor = mobilenetv2.features
         
+        self.dropout = nn.Dropout(0.8)
+        
         self.linear1 = nn.Linear(mobilenetv2.last_channel * 7 * 7, 512)
         self.linear2 = nn.Linear(512, 128)
         
         self.existence = nn.Linear(128, num_lanes)
-        self.lanelines = nn.Linear(128, num_lanes * 6)
+        self.polynomials = nn.Linear(128, num_lanes * 6)
         
      
     def forward(self, x):
@@ -30,11 +32,12 @@ class PolyNet(nn.Module):
         x = x.view(x.shape[0], -1)
         #x = x.view(-1, 7 * 7 * 1280)
         
-        x = F.relu(self.linear1(x))
-        x = F.relu(self.linear2(x))
+        x = self.dropout(F.relu(self.linear1(x)))
+        x = self.dropout(F.relu(self.linear2(x)))
         
-        objectness = F.sigmoid(self.existence(x))
-        polylines = self.lanelines(x)
+        objectness = F.sigmoid(self.existence(x)) # objectness probablity lies in [0,1]
+        polynomials = self.polynomials(x)
+        #bounds = F.sigmoid(self.bounds(x)) # bounds lie within [0,1]
         
-        return (objectness, polylines)
+        return (objectness, polynomials)
         

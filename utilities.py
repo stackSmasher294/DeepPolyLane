@@ -39,7 +39,7 @@ def visualize_detections(image_tensor, detection_tensor, existence_threshold = 0
                     lane_points_x.append(x * image_w)
                     lane_points_y.append(y * image_h)
                 #print('coeff: {}, bounds: {}'.format(coeffs, y_bounds))
-                plt.scatter(lane_points_x, lane_points_y, color=colors[i], alpha=0.3)
+                plt.scatter(lane_points_x, lane_points_y, color=colors[i], marker='.', alpha=0.2, linewidths=0.5)
             
     plt.show()
 
