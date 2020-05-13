@@ -6,6 +6,9 @@ import numpy as np
 import matplotlib.image as mpimg
 import cv2
 import functools as ft
+import warnings
+
+warnings.filterwarnings('ignore') # TODO: Not a good idea
 
 class TUSimpleLaneDataset(Dataset):
     """ Lane detection dataset """
@@ -76,6 +79,7 @@ class TUSimpleLaneDataset(Dataset):
             """
             x = [w / img_width for (h,w) in line]
             y = [h / img_height for (h,w) in line]
+            
             coeffs = np.polyfit(y, x, self.degree)
             coeffs_and_bounds = np.append(coeffs, [min(y), max(y)]).T
             polynomials_and_bounds[1:, i] = coeffs_and_bounds

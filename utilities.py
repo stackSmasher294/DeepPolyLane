@@ -8,7 +8,7 @@ def visualize_detections(image_tensor, detection_tensor, existence_threshold = 0
     denormalize = transforms.Normalize(mean=[-0.485/0.229, -0.456/0.224, -0.406/0.225], std=[1/0.229, 1/0.224, 1/0.225])
     
     for i in range(batch_size):
-        print('----------------------------------------')
+        #print('----------------------------------------')
         
         image = denormalize(image_tensor[i]).data.numpy()
         dtectns = detection_tensor[i].data.numpy()
@@ -16,7 +16,7 @@ def visualize_detections(image_tensor, detection_tensor, existence_threshold = 0
         # plot the image
         image = np.transpose(image, (1, 2, 0))
         #print('image shape: {}'.format(np.shape(image)))
-        fig=plt.figure(figsize=(10, 10), dpi= 80, facecolor='w', edgecolor='k')
+        fig=plt.figure(figsize=(20, 20), dpi= 100, facecolor='w', edgecolor='k')
         plt.subplot(2, batch_size, i + 1)
         plt.imshow(image)
         
@@ -38,7 +38,7 @@ def visualize_detections(image_tensor, detection_tensor, existence_threshold = 0
                     x = (a * y**3) + (b * y**2) + (c * y) + d
                     lane_points_x.append(x * image_w)
                     lane_points_y.append(y * image_h)
-                print('coeff: {}, bounds: {}'.format(coeffs, y_bounds))
+                #print('coeff: {}, bounds: {}'.format(coeffs, y_bounds))
                 plt.scatter(lane_points_x, lane_points_y, color=colors[i], alpha=0.3)
             
     plt.show()
