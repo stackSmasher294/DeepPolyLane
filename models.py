@@ -18,7 +18,7 @@ class PolyNet(nn.Module):
             
         self.feature_extractor = mobilenetv2.features
         
-        self.dropout = nn.Dropout(0.8)
+        self.dropout = nn.Dropout(0.2)
         
         self.linear1 = nn.Linear(mobilenetv2.last_channel * 7 * 7, 512)
         self.linear2 = nn.Linear(512, 128)
