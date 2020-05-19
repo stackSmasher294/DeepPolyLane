@@ -11,7 +11,7 @@ def visualize_detections(image_tensor, detection_tensor, existence_threshold = 0
         #print('----------------------------------------')
         
         image = denormalize(image_tensor[i]).data.numpy()
-        dtectns = detection_tensor[i].data.numpy()
+        dtectns = detection_tensor[i].data.numpy().reshape((6,2))
         
         # plot the image
         image = np.transpose(image, (1, 2, 0))
@@ -21,25 +21,23 @@ def visualize_detections(image_tensor, detection_tensor, existence_threshold = 0
         plt.imshow(image)
         
         #plot the detections
-        max_num_dtectn = 5
+        max_num_dtectn = 2
         colors = ['r', 'g', 'b', 'y', 'w']
-        for i in range(5):
-            line_detection = dtectns[:,i]
-            detection_probablity = line_detection[0]
-            #print('dtection : {}'.format(line_detection))
-            if detection_probablity > existence_threshold:
-                coeffs, y_bounds = line_detection[1:5], line_detection[5:7]
-                image_h, image_w = np.shape(image)[0], np.shape(image)[1]
-                #print('image shape: {}, {}'.format(image_h, image_w))
-                y_samples = np.linspace(y_bounds[0], y_bounds[1], 50)
-                lane_points_x, lane_points_y = [], []
-                for y in y_samples:
-                    a, b, c, d = coeffs[0], coeffs[1], coeffs[2], coeffs[3]
-                    x = (a * y**3) + (b * y**2) + (c * y) + d
-                    lane_points_x.append(x * image_w)
-                    lane_points_y.append(y * image_h)
-                #print('coeff: {}, bounds: {}'.format(coeffs, y_bounds))
-                plt.scatter(lane_points_x, lane_points_y, color=colors[i], marker='.', alpha=0.2, linewidths=0.5)
+        for i in range(2):
+            line_detection = dtectns[:,i]     
+            coeffs, y_bounds = line_detection[0:4], line_detection[4:6]
+            image_h, image_w = np.shape(image)[0], np.shape(image)[1]
+            #print('image shape: {}, {}'.format(image_h, image_w))
+            y_samples = np.linspace(y_bounds[0], y_bounds[1], 50)
+            lane_points_x, lane_points_y = [], []
+            for y in y_samples:
+                a, b, c, d = coeffs[0], coeffs[1], coeffs[2], coeffs[3]
+                x = (a * y**3) + (b * y**2) + (c * y) + d
+                lane_points_x.append(x * image_w)
+                lane_points_y.append(y * image_h)
+            #print('coeff: {}, bounds: {}'.format(coeffs, y_bounds))
+#             plt.imshow(image)
+            plt.scatter(lane_points_x, lane_points_y, color=colors[i], alpha=0.4, marker='.')
             
     plt.show()
 

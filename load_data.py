@@ -13,7 +13,7 @@ warnings.filterwarnings('ignore') # TODO: Not a good idea
 class TUSimpleLaneDataset(Dataset):
     """ Lane detection dataset """
     
-    def __init__(self, json_dataset_list, root_dir, transform=None, degree=3):
+    def __init__(self, json_dataset_list, root_dir, transform=None, cache_enabled=False, cache_size=-1, degree=3):
         """
         Args:
             json_dataset_list: list of the data points described as JSON strings returned by file.readlines()
@@ -22,13 +22,25 @@ class TUSimpleLaneDataset(Dataset):
         self.root_dir = root_dir
         self.transform = transform
         self.degree = degree
+        self.image_cache = {}
+        self.cache_enabled = cache_enabled
+        self.cache_size = cache_size # -1: No limit on the cache size
         
     def __len__(self):
         return len(self.json_dataset_list)
     
     def __getitem__(self, idx):
         image_path, lanes_polyline = self.parse_dataset(self.json_dataset_list[idx], self.root_dir)
-        image = mpimg.imread(image_path)
+        if self.cache_enabled:
+            if(not idx in self.image_cache):
+                image = mpimg.imread(image_path)
+                if self.cache_size == -1 or len(self.image_cache) <= self.cache_size:
+                    self.image_cache[idx] = image
+            else:
+                image = self.image_cache[idx]
+        else:
+            image = mpimg.imread(image_path)
+            
         height = np.shape(image)[0]
         width = np.shape(image)[1]
         
@@ -66,9 +78,9 @@ class TUSimpleLaneDataset(Dataset):
     def get_polynomials_and_bounds(self, lanelines, img_width, img_height):
         num_lanes = len(lanelines)
         
-        # columns: 1 for existence probablity, 4 for coefficients of the cubic polynomial f(y) and 2 for y limits
+        # columns: 4 for coefficients of the cubic polynomial f(y) and 2 for y limits
         # number of rows: 5, one for each lane line
-        polynomials_and_bounds = np.zeros((7, 5), dtype=np.double) 
+        polynomials_and_bounds = np.zeros((6, 5), dtype=np.double) 
         
         for i, line in enumerate(lanelines):
             """
@@ -82,8 +94,8 @@ class TUSimpleLaneDataset(Dataset):
             
             coeffs = np.polyfit(y, x, self.degree)
             coeffs_and_bounds = np.append(coeffs, [min(y), max(y)]).T
-            polynomials_and_bounds[1:, i] = coeffs_and_bounds
-            polynomials_and_bounds[0, i] = 1.0 # because it exists
+            polynomials_and_bounds[:, i] = coeffs_and_bounds
+            #polynomials_and_bounds[0, i] = 1.0 # because it exists
         return polynomials_and_bounds 
     
 
@@ -181,10 +193,10 @@ class ReorderLanes(object):
         image, detections = sample['image'], sample['detections']
         
         # Extract the columns that represent valid lane lines
-        valid_column_list = [detections[:,i] for i in range(5) if detections[0, i] == 1.0]
+        valid_column_list = [detections[:,i] for i in range(5) if detections[5, i] >= 0.5]
         
         def get_bottom_intercept(col):
-            a, b, c, d , y_high = col[1], col[2], col[3], col[4], col[6]
+            a, b, c, d , y_high = col[0], col[1], col[2], col[3], col[5]
            
             slope = (3 * a * y_high**2) + (2 * b * y_high) + c
             x_high = (a * y_high**3) + (b * y_high**2) + (c * y_high) + d
@@ -193,11 +205,24 @@ class ReorderLanes(object):
         
         
         valid_column_list.sort(key = lambda col: get_bottom_intercept(col))
+        
+        left_lane_lines = [col for col in valid_column_list if get_bottom_intercept(col) < 0.5]
+        right_lane_lines = valid_column_list[len(left_lane_lines):]
+        
+        x_intercepts = [get_bottom_intercept(col) for col in valid_column_list]
 
-        reordered_detections = np.zeros((7, 5), dtype=np.double)
+        reordered_detections = np.zeros((6, 2), dtype=np.double)
+        
+        if len(left_lane_lines) > 0 and len(right_lane_lines) > 0:
+            ego_lane_lines = [left_lane_lines[-1], \
+                              right_lane_lines[0]]
+        else:
+            ego_lane_lines = right_lane_lines[:2]
 
-        for i, column in enumerate(valid_column_list):
+        for i, column in enumerate(ego_lane_lines):
             reordered_detections[:, i] = column.T
+            if(column[5] == 0):
+                print('intercepts:\n{}\nall lines: {}'.format(x_intercepts, valid_column_list))
                  
         return {'image':image, 'detections':reordered_detections}
 

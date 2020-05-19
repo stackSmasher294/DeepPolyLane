@@ -12,32 +12,36 @@ class PolyNet(nn.Module):
         super(PolyNet, self).__init__()
         # Use a pre-trained network for feature extraction
         # Checkout https://github.com/pytorch/vision/blob/master/torchvision/models/mobilenet.py
-        mobilenetv2 = models.mobilenet_v2(pretrained=True)
-        for param in mobilenetv2.parameters():
-            param.requires_grad_(False)
+        self.resnet18 = models.resnet18(pretrained=True)
+#         for param in self.resnet18.parameters():
+#             param.requires_grad_(False)
             
-        self.feature_extractor = mobilenetv2.features
         
-        self.dropout = nn.Dropout(0.8)
+        self.dropout = nn.Dropout(0.2)
         
-        self.linear1 = nn.Linear(mobilenetv2.last_channel * 7 * 7, 512)
-        self.linear2 = nn.Linear(512, 128)
+        self.resnet18.fc = nn.Linear(512, 512)
+        self.linear1 = nn.Linear(512, 256)
+        self.linear2 = nn.Linear(256, 128)
+
+        self.polynomials = nn.Linear(128, 2 * 6)
         
-        self.existence = nn.Linear(128, num_lanes)
-        self.polynomials = nn.Linear(128, num_lanes * 6)
+        for m in [self.resnet18.fc, self.linear1, self.linear2, self.polynomials]:
+            if isinstance(m, nn.Linear):
+                #I.xavier_normal_(m.weight)
+                nn.init.normal_(m.weight, 0, 0.01)
+                #nn.init.normal_(m.bais, 0, 0.01)
         
      
     def forward(self, x):
-        x = self.feature_extractor(x)
-        x = x.view(x.shape[0], -1)
+        x = self.resnet18(x)
+        #x = x.view(x.shape[0], -1)
         #x = x.view(-1, 7 * 7 * 1280)
         
         x = self.dropout(F.relu(self.linear1(x)))
         x = self.dropout(F.relu(self.linear2(x)))
         
-        objectness = F.sigmoid(self.existence(x)) # objectness probablity lies in [0,1]
-        polynomials = self.polynomials(x)
-        #bounds = F.sigmoid(self.bounds(x)) # bounds lie within [0,1]
         
-        return (objectness, polynomials)
+        polynomials = self.polynomials(x)       
+        
+        return polynomials
         
