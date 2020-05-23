@@ -228,8 +228,33 @@ class ReorderLanes(object):
 
     
     
-# class RandomXShift(object):
-#     """
-#         Shifts the image in the width direction by a small random amount, to crudely simulate lane changes
-#     """
+class RandomHorizontalShift(object):
+    """
+        Shifts the image in the width direction by a small random amount, to crudely simulate lane changes
+    """
+    def __init__(self, output_width, max_x=10):
+        self.max_x = max_x
+        self.width = output_width
+        
+    
+    def __call__(self, sample):
+        image, detections = sample['image'], sample['detections']
+        
+        height, width = np.shape(image)[0], np.shape(image)[1]
+        
+        random_shift = int(self.max_x * np.random.random()) # +/- self.max_x 
+        
+        shifted_detections = detections
+        
+        # shift the polynomials
+        shifted_detections[3, :] -= random_shift / width
+        
+        
+        # horizontal cropp
+        
+        shifted_image = image[:, random_shift:(self.width + random_shift), :]
+        
+        
+        
+        return {'image': shifted_image, 'detections':shifted_detections}
    
