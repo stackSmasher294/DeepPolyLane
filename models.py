@@ -44,4 +44,39 @@ class PolyNet(nn.Module):
         polynomials = self.polynomials(x)       
         
         return polynomials
+
+class PolyNet2(nn.Module):
+    
+    def __init__(self):
+        super(PolyNet2, self).__init__()
+        
+        # INput dimension [1,224,224]
+        # Formula O = (N - K + 2P) / S + 1
+        mobilenetv2 = models.mobilenet_v2(pretrained=True)
+        
+#         for param in mobilenetv2.parameters():
+#             param.requires_grad_(False)
+            
+        self.feature_extractor = mobilenetv2.features
+        
+        self.linear1 = nn.Linear(mobilenetv2.last_channel * 7 * 7, 512)
+        self.linear2 = nn.Linear(512, 128)
+        
+        self.polynomials = nn.Linear(128, 2 * 6)
+        
+        self.dropout = nn.Dropout(0.2)
+        
+    def forward(self, x):
+        x = self.feature_extractor(x)
+        x = x.view(x.shape[0], -1)
+        #x = x.view(-1, 7 * 7 * 1280)
+        
+        x = self.dropout(F.relu(self.linear1(x)))
+        x = self.dropout(F.relu(self.linear2(x)))
+        
+        polynomials = self.polynomials(x)
+        
+        return polynomials
+        
+        
         
